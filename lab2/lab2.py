@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
         self.output_text.append(f"Извлеченное сообщение: {extracted_text}\n")  # Вывод в основное поле
 
     def save_image(self):
-        """Сохранение обработанного изображения."""
+        #Сохранение обработанного изображения.
         if not hasattr(self, 'modified_image') or not self.input_image_format:
             self.output_text.append("Ошибка: изображение для сохранения отсутствует.")
             return
@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
             self.output_text.append("Невозможно оценить процент ошибок: нет битов для сравнения.\n")
 
     def cdb_inject(self, message_bits: list, img: QImage) -> QImage:
-        """Встраивание сообщения в изображение по методу CDB."""
+        #Встраивание сообщения в изображение по методу CDB.
         gen = np.random.RandomState(self.seed)
         new_img = QImage(img)  # Создаем копию изображения для изменений
         width = new_img.width()
