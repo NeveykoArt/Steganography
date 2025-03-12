@@ -61,11 +61,11 @@ class SteganographyApp(QWidget):
         self.setLayout(layout)
 
     def select_carrier_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Выбрать изображение-носитель", "", "Image Files (*.pgm)")
+        path, _ = QFileDialog.getOpenFileName(self, "Выбрать изображение-носитель", "", "Image Files (*.pgm *.bmp)")
         self.carrier_path_input.setText(path)
 
     def select_stego_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Выбрать стегоизображение", "", "Image Files (*.pgm)")
+        path, _ = QFileDialog.getOpenFileName(self, "Выбрать стегоизображение", "", "Image Files (*.pgm *.bmp)")
         self.stego_path_input.setText(path)
 
     def encode_message(self):
