@@ -10,7 +10,7 @@ class SteganographyApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Стеганография")
+        self.setWindowTitle("Встраивание сообщения в изображение")
         self.setGeometry(100, 100, 400, 400)
 
         layout = QVBoxLayout()
@@ -32,7 +32,7 @@ class SteganographyApp(QWidget):
         layout.addWidget(self.secret_msg_input)
 
         self.encode_button = QPushButton("Зашифровать")
-        self.encode_button.clicked.connect(self.encode_message)
+        self.encode_button.clicked.connect(self.hide_message)
         layout.addWidget(self.encode_button)
 
         # Decode
@@ -48,7 +48,7 @@ class SteganographyApp(QWidget):
         layout.addWidget(self.stego_button)
 
         self.decode_button = QPushButton("Расшифровать")
-        self.decode_button.clicked.connect(self.decode_message)
+        self.decode_button.clicked.connect(self.extract_message)
         layout.addWidget(self.decode_button)
 
         self.decoded_msg_output = QTextEdit()
@@ -68,7 +68,7 @@ class SteganographyApp(QWidget):
         path, _ = QFileDialog.getOpenFileName(self, "Выбрать стегоизображение", "", "Image Files (*.pgm *.bmp)")
         self.stego_path_input.setText(path)
 
-    def encode_message(self):
+    def hide_message(self):
         carrier_path = self.carrier_path_input.text()
         secret_msg = self.secret_msg_input.text()
 
@@ -133,7 +133,7 @@ class SteganographyApp(QWidget):
         except Exception as e:
             self.decoded_msg_output.setText(f"Ошибка: {e}")
 
-    def decode_message(self):
+    def extract_message(self):
         stego_path = self.stego_path_input.text()
 
         if not stego_path:
