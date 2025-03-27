@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton,
     QLineEdit, QFileDialog, QLabel, QTextEdit
 )
+
 from PyQt5.QtCore import Qt
 import os
 
@@ -24,13 +25,14 @@ def psnr(img1, img2):
         return float('inf')
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
-def hide(img_path, message, out_path):
+def hide(img_path, message, out_path, inter_path):
     img = Image.open(img_path)
     pix = np.array(img, dtype=int)
     bits = to_bin(message)
     bit_idx = 0
     M, N = pix.shape
     stego = pix.copy()
+    inter = pix.copy()
 
     for x in range(0, M - 2, 2):
         for y in range(0, N - 2, 2):
@@ -57,7 +59,9 @@ def hide(img_path, message, out_path):
                     stego[x + dx, y + dy] = ref - Rk
                 else:
                     stego[x + dx, y + dy] = C[dx, dy]
+                inter[x + dx, y + dy] = C[dx, dy]
     Image.fromarray(np.clip(stego, 0, 255).astype(np.uint8)).save(out_path)
+    Image.fromarray(np.clip(inter, 0, 255).astype(np.uint8)).save(inter_path)
 
 def extract(stego_path, msg_length):
     stego_img = Image.open(stego_path)
@@ -185,12 +189,14 @@ class SteganographyApp(QWidget):
 
             filename, file_extension = os.path.splitext(carrier_path)
             output_path = f"{filename}_stego{file_extension}"
+            self.interpolated_path = f"{filename}_inter{file_extension}"
 
-            hide(carrier_path, secret_msg, output_path)
+            hide(carrier_path, secret_msg, output_path, self.interpolated_path)
 
             original_img = Image.open(carrier_path)
             stego_img = Image.open(output_path)
-            psnr_value = psnr(original_img, stego_img)
+            inter_image = Image.open(self.interpolated_path)
+            psnr_value = psnr(inter_image, stego_img)
 
             self.decoded_msg_output.setText(
                 f"Сообщение зашифровано.\nСтегоизображение сохранено: {output_path}\nPSNR: {psnr_value:.2f} dB"
@@ -225,7 +231,8 @@ class SteganographyApp(QWidget):
 
             original_img = Image.open(original_path)
             stego_img = Image.open(stego_path)
-            psnr_value = psnr(original_img, stego_img)
+            inter_image = Image.open(self.interpolated_path)
+            psnr_value = psnr(inter_image, stego_img)
 
             self.decoded_msg_output.setText(f"Расшифрованное сообщение: {extracted_secret}")
             self.psnr_output.setText(f"PSNR: {psnr_value:.2f} dB")
