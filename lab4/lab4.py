@@ -25,11 +25,6 @@ def psnr(img1, img2):
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
 def hide(img_path, message, out_path):
-    """
-    Шифрует сообщение в изображение по блокам 2х2:
-    - Использует преобразование в оттенки серого (L).
-    - Встраивает биты в пиксели, управляя разностью соседних значений.
-    """
     img = Image.open(img_path)
     pix = np.array(img, dtype=int)
     bits = to_bin(message)
@@ -62,16 +57,9 @@ def hide(img_path, message, out_path):
                     stego[x + dx, y + dy] = ref - Rk
                 else:
                     stego[x + dx, y + dy] = C[dx, dy]
-
-    # Сохраняем результат
     Image.fromarray(np.clip(stego, 0, 255).astype(np.uint8)).save(out_path)
 
 def extract(stego_path, msg_length):
-    """
-    Извлекает зашифрованное сообщение фиксированной длины msg_length
-    (кол-во символов), зная исходный алгоритм.
-    Возвращает извлечённое сообщение (строку).
-    """
     stego_img = Image.open(stego_path)
     stego = np.array(stego_img, dtype=int)
     bits = ''
@@ -101,7 +89,7 @@ def extract(stego_path, msg_length):
 
                     Rk = ref - stego[x + dx, y + dy]
                     if Rk < 0:
-                        Rk = 0  # корректировка на ошибки
+                        Rk = 0
                     bits += f'{Rk:0{ak}b}'
                     extracted += ak
 
@@ -115,7 +103,7 @@ class SteganographyApp(QWidget):
 
         self.setWindowTitle("Встраивание сообщения в изображение методом IMNP")
         self.setGeometry(100, 100, 400, 400)
-        self.msg_length = 0  # Храним длину сообщения для извлечения
+        self.msg_length = 0
 
         layout = QVBoxLayout()
 
@@ -124,10 +112,10 @@ class SteganographyApp(QWidget):
         layout.addWidget(self.encode_label)
 
         self.carrier_path_input = QLineEdit()
-        self.carrier_path_input.setPlaceholderText("Путь к изображению-носителю (BMP/PGM)")
+        self.carrier_path_input.setPlaceholderText("Путь к изображению (BMP/PGM)")
         layout.addWidget(self.carrier_path_input)
 
-        self.carrier_button = QPushButton("Выбрать изображение-носитель")
+        self.carrier_button = QPushButton("Выбрать изображение")
         self.carrier_button.clicked.connect(self.select_carrier_image)
         layout.addWidget(self.carrier_button)
 
@@ -189,26 +177,21 @@ class SteganographyApp(QWidget):
         secret_msg = self.secret_msg_input.text()
 
         if not carrier_path or not secret_msg:
-            self.decoded_msg_output.setText("Пожалуйста, заполните все поля для шифрования.")
+            self.decoded_msg_output.setText("Заполните все поля для шифрования.")
             return
 
         try:
-            # Сохраняем длину сообщения
             self.msg_length = len(secret_msg)
 
-            # Формируем имя выходного файла
             filename, file_extension = os.path.splitext(carrier_path)
             output_path = f"{filename}_stego{file_extension}"
 
-            # Вызываем функцию hide из первого кода
             hide(carrier_path, secret_msg, output_path)
 
-            # Считаем PSNR между исходным и стегоизображением
-            original_img = Image.open(carrier_path).convert('L')
-            stego_img = Image.open(output_path).convert('L')
+            original_img = Image.open(carrier_path)
+            stego_img = Image.open(output_path)
             psnr_value = psnr(original_img, stego_img)
 
-            # Выводим информацию
             self.decoded_msg_output.setText(
                 f"Сообщение зашифровано.\nСтегоизображение сохранено: {output_path}\nPSNR: {psnr_value:.2f} dB"
             )
@@ -220,23 +203,18 @@ class SteganographyApp(QWidget):
     def extract_message(self):
         stego_path = self.stego_path_input.text()
         if not stego_path:
-            self.decoded_msg_output.setText("Пожалуйста, укажите путь к стегоизображению.")
+            self.decoded_msg_output.setText("Укажите путь к стегоизображению.")
             return
 
         if not self.msg_length:
-            # Если мы не запомнили длину сообщения при шифровании,
-            # можно попросить пользователя ввести её вручную или задать
-            # значение. Пока что выводим предупреждение.
             self.decoded_msg_output.setText(
-                "Неизвестна длина сообщения. Сначала зашифруйте сообщение в этой же сессии."
+                "Неизвестна длина сообщения."
             )
             return
 
         try:
-            # Извлекаем сообщение
             extracted_secret = extract(stego_path, self.msg_length)
 
-            # Для PSNR нужно исходное изображение (carrier)
             original_path = self.carrier_path_input.text()
             if not original_path:
                 self.decoded_msg_output.setText(
