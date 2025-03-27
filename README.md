@@ -38,7 +38,7 @@
 
 Путем сравнения MSB с битами секретного сообщения в LSB записывается 1 в случае равенства, в другом случае 0.
 
-Использовалась статья Ali M.Z., Riaz O., Hasnain H.M., Sharif W., Ali T., Choi G.S. Elevating Image Steganography: A Fusion of MSB Matching and LSB Substitution for Enhanced Concealment Capabilities // Computers, Materials & Continua. — 2024. — Vol. 79. — No 2. — P. 2923–2943. — DOI: 10.32604/cmc.2024.049139
+Использовалась статья: Ali M.Z., Riaz O., Hasnain H.M., Sharif W., Ali T., Choi G.S. Elevating Image Steganography: A Fusion of MSB Matching and LSB Substitution for Enhanced Concealment Capabilities // Computers, Materials & Continua. — 2024. — Vol. 79. — No 2. — P. 2923–2943. — DOI: 10.32604/cmc.2024.049139
 
 
 # Лаба 4
@@ -49,4 +49,4 @@
 Изображение разбивается на блоки по 2x2 пикселя. Пиксель (0, 0) - опорный, остальные изменяются. Используя соседние блоки рассчитываются значения изменяемых пикселей, секретное сообщение встраивается путем разбивки на блоки, преобразования в число с основанием 10 и вычитанием из значения изменяемого пикселя.
 Для восстановления нужно провести обратную операцию - восстановить изначальное значение изменяемых пикселей из соседних блоков и вычесть из него значение соответствующего пикселя стегоконтейнера. Полученное число переводится в биты, конкатенируется с другими блоками для получения сообщения.
 
-Использовалась статья Hu J., Li T. Reversible steganography using extended image interpolation technique // Computers and Electrical Engineering. 2015. Vol. 46. pp. 447-455.
+Использовалась статья: Hu J., Li T. Reversible steganography using extended image interpolation technique // Computers and Electrical Engineering. 2015. Vol. 46. pp. 447-455.
