@@ -112,41 +112,6 @@ class BitImageVisualizer(QWidget):
                 chi_values[i, j] = np.sum((observed - expected) ** 2 / expected)
         return chi_values
 
-    def rs_analysis(self, image_path):
-        img = Image.open(image_path).convert("L")
-        width, height = img.size
-        pixels = img.load()
-
-        def smoothness(block):
-            s = 0
-            for i in range(len(block) - 1):
-                s += abs(block[i] - block[i+1])
-            return s
-
-        R_total = 0
-        S_total = 0
-        count_blocks = 0
-
-        for y in range(height - 1):
-            for x in range(width - 1):
-                block = [
-                    pixels[x, y],
-                    pixels[x+1, y],
-                    pixels[x, y+1],
-                    pixels[x+1, y+1]
-                ]
-                r = smoothness(block)
-                flipped_block = [(p ^ 1) for p in block]
-                s = smoothness(flipped_block)
-
-                R_total += r
-                S_total += s
-                count_blocks += 1
-
-        if count_blocks == 0 or R_total == 0:
-            return 0.0
-        return (S_total / float(R_total))
-
     def aump_analysis(self, image_path, m: int = 8, d: int = 1) -> float:
         image = QImage(image_path)
         arr = np.zeros((image.height(), image.width()), dtype=np.float64)
