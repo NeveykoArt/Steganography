@@ -134,7 +134,7 @@ class SteganographyApp(QWidget):
 
                 # Сохранение стегоизображения
                 filename, file_extension = os.path.splitext(carrier_path)
-                output_path = f"{filename}_stego{file_extension}"
+                output_path = f"{filename}_stego_lab3{file_extension}"
                 self.stego_paths.append(output_path)
                 Image.fromarray(pixels.astype(np.uint8)).save(output_path)
                 self.decoded_msg_output.append(f"Сообщение зашифровано в {output_path}\n")
@@ -181,7 +181,7 @@ class SteganographyApp(QWidget):
                 if self.carrier_paths:
                     try:
                         # Используем первый carrier_path для расчета PSNR
-                        original_path = stego_path.replace("_stego", "")
+                        original_path = stego_path.replace("_stego_lab3", "")
                         orig = np.array(Image.open(original_path)).astype(float)
                         stego = np.array(img).astype(float)
                         mse = np.mean((orig - stego) ** 2)

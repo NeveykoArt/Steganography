@@ -2,14 +2,12 @@ import sys
 import math
 import numpy as np
 from PIL import Image
+import os
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton,
-    QLineEdit, QFileDialog, QLabel, QTextEdit
+    QLineEdit, QFileDialog, QTextEdit
 )
-
-from PyQt5.QtCore import Qt
-import os
 
 def to_bin(msg):
     return ''.join(f'{ord(c):08b}' for c in msg)
@@ -25,7 +23,7 @@ def psnr(img1, img2):
         return float('inf')
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
-def hide(img_path, message, out_path, inter_path):
+def hide(img_path, message, out_path):
     img = Image.open(img_path)
     pix = np.array(img, dtype=int)
     bits = to_bin(message)
@@ -60,8 +58,9 @@ def hide(img_path, message, out_path, inter_path):
                 else:
                     stego[x + dx, y + dy] = C[dx, dy]
                 inter[x + dx, y + dy] = C[dx, dy]
+
     Image.fromarray(np.clip(stego, 0, 255).astype(np.uint8)).save(out_path)
-    Image.fromarray(np.clip(inter, 0, 255).astype(np.uint8)).save(inter_path)
+    return Image.fromarray(np.clip(inter, 0, 255).astype(np.uint8))
 
 def extract(stego_path, msg_length):
     stego_img = Image.open(stego_path)
@@ -97,148 +96,117 @@ def extract(stego_path, msg_length):
                     bits += f'{Rk:0{ak}b}'
                     extracted += ak
 
+                # Если мы достигли нужной длины (в битах), возвращаем результат
                 if extracted >= msg_length * 8:
                     return from_bin(bits[:msg_length * 8])
+
     return from_bin(bits[:msg_length * 8])
 
 class SteganographyApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Встраивание/Извлечение сообщения (IMNP)")
+        self.setGeometry(100, 100, 600, 400)
 
-        self.setWindowTitle("Встраивание сообщения в изображение методом IMNP")
-        self.setGeometry(100, 100, 400, 400)
+        self.selected_paths = []
         self.msg_length = 0
 
         layout = QVBoxLayout()
 
-        # Шифрование
-        self.encode_label = QLabel("Шифрование")
-        layout.addWidget(self.encode_label)
+        self.select_images_button = QPushButton("Выбрать изображения")
+        self.select_images_button.clicked.connect(self.select_images)
+        layout.addWidget(self.select_images_button)
 
-        self.carrier_path_input = QLineEdit()
-        self.carrier_path_input.setPlaceholderText("Путь к изображению (BMP/PGM)")
-        layout.addWidget(self.carrier_path_input)
+        self.message_input = QLineEdit()
+        self.message_input.setPlaceholderText("Введите секретное сообщение для встраивания")
+        layout.addWidget(self.message_input)
 
-        self.carrier_button = QPushButton("Выбрать изображение")
-        self.carrier_button.clicked.connect(self.select_carrier_image)
-        layout.addWidget(self.carrier_button)
+        self.embed_button = QPushButton("Встроить")
+        self.embed_button.clicked.connect(self.embed_message)
+        layout.addWidget(self.embed_button)
 
-        self.secret_msg_input = QLineEdit()
-        self.secret_msg_input.setPlaceholderText("Секретное сообщение")
-        layout.addWidget(self.secret_msg_input)
+        self.extract_button = QPushButton("Извлечь")
+        self.extract_button.clicked.connect(self.extract_message)
+        layout.addWidget(self.extract_button)
 
-        self.encode_button = QPushButton("Зашифровать")
-        self.encode_button.clicked.connect(self.hide_message)
-        layout.addWidget(self.encode_button)
-
-        # Расшифровка
-        self.decode_label = QLabel("Расшифровка")
-        layout.addWidget(self.decode_label)
-
-        self.stego_path_input = QLineEdit()
-        self.stego_path_input.setPlaceholderText("Путь к стегоизображению (BMP/PGM)")
-        layout.addWidget(self.stego_path_input)
-
-        self.stego_button = QPushButton("Выбрать стегоизображение")
-        self.stego_button.clicked.connect(self.select_stego_image)
-        layout.addWidget(self.stego_button)
-
-        self.decode_button = QPushButton("Расшифровать")
-        self.decode_button.clicked.connect(self.extract_message)
-        layout.addWidget(self.decode_button)
-
-        self.decoded_msg_output = QTextEdit()
-        self.decoded_msg_output.setReadOnly(True)
-        layout.addWidget(self.decoded_msg_output)
-
-        self.psnr_output = QLabel()
-        layout.addWidget(self.psnr_output)
+        self.info_output = QTextEdit()
+        self.info_output.setReadOnly(True)
+        layout.addWidget(self.info_output)
 
         self.setLayout(layout)
 
-    def select_carrier_image(self):
-        path, _ = QFileDialog.getOpenFileName(
+    def select_images(self):
+        paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "Выбрать изображение-носитель",
+            "Выберите изображения (BMP/PGM)",
             "",
             "Image Files (*.pgm *.bmp)"
         )
-        if path:
-            self.carrier_path_input.setText(path)
+        if paths:
+            self.selected_paths = paths
+            self.info_output.setText(
+                "Выбрано изображений: {}\n\n".format(len(paths)) +
+                "\n".join(paths)
+            )
 
-    def select_stego_image(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Выбрать стегоизображение",
-            "",
-            "Image Files (*.pgm *.bmp)"
-        )
-        if path:
-            self.stego_path_input.setText(path)
-
-    def hide_message(self):
-        carrier_path = self.carrier_path_input.text()
-        secret_msg = self.secret_msg_input.text()
-
-        if not carrier_path or not secret_msg:
-            self.decoded_msg_output.setText("Заполните все поля для шифрования.")
+    def embed_message(self):
+        if not self.selected_paths:
+            self.info_output.setText("Сначала выберите изображения.")
             return
 
-        try:
-            self.msg_length = len(secret_msg)
+        message = self.message_input.text()
+        if not message:
+            self.info_output.setText("Введите сообщение для встраивания.")
+            return
 
-            filename, file_extension = os.path.splitext(carrier_path)
-            output_path = f"{filename}_stego{file_extension}"
-            self.interpolated_path = f"{filename}_inter{file_extension}"
+        self.msg_length = len(message)
+        results = []
+        for path in self.selected_paths:
+            try:
+                filename, ext = os.path.splitext(path)
+                stego_path = f"{filename}_stego_lab4{ext}"
 
-            hide(carrier_path, secret_msg, output_path, self.interpolated_path)
+                inter_img = hide(path, message, stego_path)
+                stego_img = Image.open(stego_path)
+                psnr_val = psnr(inter_img, stego_img)
 
-            original_img = Image.open(carrier_path)
-            stego_img = Image.open(output_path)
-            inter_image = Image.open(self.interpolated_path)
-            psnr_value = psnr(inter_image, stego_img)
+                results.append(
+                    f"Файл: {path}\n"
+                    f"Стего: {stego_path}\n"
+                    f"PSNR: {psnr_val:.2f} dB\n"
+                )
+            except Exception as e:
+                results.append(
+                    f"Ошибка при встраивании в файл {path}: {str(e)}\n"
+                )
 
-            self.decoded_msg_output.setText(
-                f"Сообщение зашифровано.\nСтегоизображение сохранено: {output_path}\nPSNR: {psnr_value:.2f} dB"
-            )
-            self.stego_path_input.setText(output_path)
-
-        except Exception as e:
-            self.decoded_msg_output.setText(f"Ошибка при шифровании: {str(e)}")
+        self.info_output.setText(
+            "Встраивание завершено. Результаты:\n\n" + "\n".join(results)
+        )
 
     def extract_message(self):
-        stego_path = self.stego_path_input.text()
-        if not stego_path:
-            self.decoded_msg_output.setText("Укажите путь к стегоизображению.")
+        if not self.selected_paths:
+            self.info_output.setText("Сначала выберите изображения.")
             return
 
-        if not self.msg_length:
-            self.decoded_msg_output.setText(
-                "Неизвестна длина сообщения."
-            )
+        if self.msg_length == 0:
+            self.info_output.setText("Неизвестна длина сообщения (сначала выполните встраивание).")
             return
 
-        try:
-            extracted_secret = extract(stego_path, self.msg_length)
+        results = []
+        for path in self.selected_paths:
+            try:
+                filename, ext = os.path.splitext(path)
+                stego_path = f"{filename}_stego_lab4{ext}"
 
-            original_path = self.carrier_path_input.text()
-            if not original_path:
-                self.decoded_msg_output.setText(
-                    f"Расшифрованное сообщение: {extracted_secret}\n"
-                    "Неизвестен путь к исходному изображению, PSNR не вычислен."
-                )
-                return
+                extracted = extract(stego_path, self.msg_length)
+                results.append(f"Файл: {stego_path}\nИзвлечённое сообщение: {extracted}\n")
+            except Exception as e:
+                results.append(f"Ошибка при извлечении из файла {path}: {str(e)}\n")
 
-            original_img = Image.open(original_path)
-            stego_img = Image.open(stego_path)
-            inter_image = Image.open(self.interpolated_path)
-            psnr_value = psnr(inter_image, stego_img)
-
-            self.decoded_msg_output.setText(f"Расшифрованное сообщение: {extracted_secret}")
-            self.psnr_output.setText(f"PSNR: {psnr_value:.2f} dB")
-
-        except Exception as e:
-            self.decoded_msg_output.setText(f"Ошибка при расшифровании: {str(e)}")
+        self.info_output.setText(
+            "Извлечение завершено. Результаты:\n\n" + "\n".join(results)
+        )
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
