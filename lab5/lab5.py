@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QWidget,
-    QRadioButton, QFileDialog, QMessageBox, QGroupBox, QScrollArea, QFrame
+    QRadioButton, QFileDialog, QMessageBox, QGroupBox, QScrollArea, QFrame, QTextEdit
 )
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QImage
 from PyQt5.QtCore import Qt, QRect
@@ -112,7 +112,7 @@ class BitImageVisualizer(QWidget):
                 chi_values[i, j] = np.sum((observed - expected) ** 2 / expected)
         return chi_values
 
-    def aump_analysis(self, image_path, m: int = 8, d: int = 1) -> float:
+    def aump_analysis(self, image_path, m: int = 16, d: int = 2) -> float:
         image = QImage(image_path)
         arr = np.zeros((image.height(), image.width()), dtype=np.float64)
         for y in range(image.height()):
@@ -138,6 +138,11 @@ class BitImageVisualizer(QWidget):
         self.create_changed_image_layout(image_layout)
 
         self.create_button_layout(main_layout)
+
+        self.info_output = QTextEdit()
+        self.info_output.setReadOnly(True)
+        main_layout.addWidget(self.info_output)
+
         self.create_bit_selection_layout(main_layout)
 
         self.update_bit_visualization()
@@ -278,16 +283,48 @@ class BitImageVisualizer(QWidget):
             return
 
         results = []
+        elements_1 = np.array([])
+        elements_2 = np.array([])
+        elements_3 = np.array([])
+
         for image_path in self.selected_image_paths:
             chi_val = self.chi_square_analysis(image_path)
+
+            chi_mas = np.array([sub_arr.mean() for sub_arr in chi_val])
+            filtered_chi_mas = chi_mas[chi_mas <= 60000.0]
+
             rs_val = run_java_analysis(image_path)
+
+            start_index = rs_val.find("Average result: ")
+            end_index = rs_val.find("\n", start_index)
+            rs_val = rs_val[start_index:end_index]
+            rs_val = rs_val.split("Average result: ")[1].split()[0]
+
             aump_val = self.aump_analysis(image_path)
 
+            self.info_output.append(
+                      f"Результаты стегоанализа для {image_path}:\n"
+                      f"Хи-квадрат (среднее по всем блокам): {filtered_chi_mas.mean():.4f}\n"
+                      #f"Хи-квадрат (cреднее значение в каждом блоке): \n{np.array([sub_arr.mean() for sub_arr in filtered_chi_mas])}\n"
+                      f"RS-анализ: {rs_val}\n"
+                      f"AUMP-показатель: {abs(aump_val):.4f}\n\n"
+            )
+
             result = (f"Результаты стегоанализа для {image_path}:\n"
-                      f"Хи-квадрат (среднее): {chi_val.mean():.4f}\n"
-                      f"RS-анализ: {rs_val}"
-                      f"AUMP-показатель: {aump_val:.4f}\n\n")
+                      f"Хи-квадрат (среднее по всем блокам): {filtered_chi_mas.mean():.4f}\n"
+                      #f"Хи-квадрат (cреднее значение в каждом блоке): \n{np.array([sub_arr.mean() for sub_arr in filtered_chi_mas])}\n"
+                      f"RS-анализ: {rs_val}\n"
+                      f"AUMP-показатель: {abs(aump_val):.4f}\n\n")
             results.append(result)
+
+            elements_1 = np.append(elements_1, filtered_chi_mas.mean())
+            elements_2 = np.append(elements_2, float(rs_val))
+            elements_3 = np.append(elements_3, abs(aump_val))
+
+        print(np.sort(elements_1))
+        print(np.sort(elements_2))
+        print(np.sort(elements_3))
+
 
         save_path, _ = QFileDialog.getSaveFileName(
             self,
