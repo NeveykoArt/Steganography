@@ -200,7 +200,7 @@ class SteganographyApp(QWidget):
                 if self.carrier_paths:
                     try:
                         # Используем первый carrier_path для расчета PSNR
-                        original_path = stego_path.replace("_stego_lab3", "")
+                        original_path = stego_path.replace(f"_stego_lab3{self.secret_msg_percentage.text()}", "")
                         orig = np.array(Image.open(original_path)).astype(float)
                         stego = np.array(img).astype(float)
                         mse = np.mean((orig - stego) ** 2)

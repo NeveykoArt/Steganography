@@ -32,6 +32,8 @@ def hide(img_path, message, out_path):
     stego = pix.copy()
     inter = pix.copy()
 
+    max_hide = 0
+
     for x in range(0, M - 2, 2):
         for y in range(0, N - 2, 2):
             Omin = np.min([pix[x, y], pix[x+2, y], pix[x, y+2], pix[x+2, y+2]])
@@ -50,6 +52,7 @@ def hide(img_path, message, out_path):
                 if ak > 0 and bit_idx + ak <= len(bits):
                     Rk = int(bits[bit_idx:bit_idx + ak], 2)
                     bit_idx += ak
+                    max_hide += ak
                     if (dx, dy) == (1, 1):
                         ref = min(C[1, 0], C[0, 1])
                     else:
@@ -60,7 +63,7 @@ def hide(img_path, message, out_path):
                 inter[x + dx, y + dy] = C[dx, dy]
 
     Image.fromarray(np.clip(stego, 0, 255).astype(np.uint8)).save(out_path)
-    return Image.fromarray(np.clip(inter, 0, 255).astype(np.uint8))
+    return max_hide, Image.fromarray(np.clip(inter, 0, 255).astype(np.uint8))
 
 def extract(stego_path, msg_length):
     stego_img = Image.open(stego_path)
@@ -117,9 +120,12 @@ class SteganographyApp(QWidget):
         self.select_images_button.clicked.connect(self.select_images)
         layout.addWidget(self.select_images_button)
 
-        self.message_input = QLineEdit()
-        self.message_input.setPlaceholderText("Введите секретное сообщение для встраивания")
-        layout.addWidget(self.message_input)
+        with open("pg2600.txt", 'r', encoding='utf-8') as f:
+            self.book = f.read()
+
+        self.secret_msg_percentage = QLineEdit()
+        self.secret_msg_percentage.setPlaceholderText("Процент заполнения")
+        layout.addWidget(self.secret_msg_percentage)
 
         self.embed_button = QPushButton("Встроить")
         self.embed_button.clicked.connect(self.embed_message)
@@ -149,24 +155,28 @@ class SteganographyApp(QWidget):
                 "\n".join(paths)
             )
 
+    def get_stego_text_chunk(self, container_bits: int) -> str:
+        self.target_bits = int(container_bits * (int(self.secret_msg_percentage.text()) / 100))
+        target_bytes = self.target_bits // 8  # 1 символ = 1 байт
+        
+        return self.book[:target_bytes]
+
     def embed_message(self):
         if not self.selected_paths:
             self.info_output.setText("Сначала выберите изображения.")
             return
 
-        message = self.message_input.text()
-        if not message:
-            self.info_output.setText("Введите сообщение для встраивания.")
-            return
-
-        self.msg_length = len(message)
         results = []
         for path in self.selected_paths:
             try:
                 filename, ext = os.path.splitext(path)
-                stego_path = f"{filename}_stego_lab4{ext}"
+                stego_path = f"{filename}_stego_lab4_{self.secret_msg_percentage.text()}{ext}"
 
-                inter_img = hide(path, message, stego_path)
+                max_hide, _ = hide(path, self.book, stego_path)
+                secret_msg = self.get_stego_text_chunk(max_hide)
+                self.msg_length = len(secret_msg)
+                _, inter_img = hide(path, secret_msg, stego_path)
+
                 stego_img = Image.open(stego_path)
                 psnr_val = psnr(inter_img, stego_img)
 
@@ -174,6 +184,7 @@ class SteganographyApp(QWidget):
                     f"Файл: {path}\n"
                     f"Стего: {stego_path}\n"
                     f"PSNR: {psnr_val:.2f} dB\n"
+                    f"Встроено: {self.target_bits} бит\n"
                 )
             except Exception as e:
                 results.append(
@@ -197,7 +208,7 @@ class SteganographyApp(QWidget):
         for path in self.selected_paths:
             try:
                 filename, ext = os.path.splitext(path)
-                stego_path = f"{filename}_stego_lab4{ext}"
+                stego_path = f"{filename}_stego_lab4_{self.secret_msg_percentage.text()}{ext}"
 
                 extracted = extract(stego_path, self.msg_length)
                 results.append(f"Файл: {stego_path}\nИзвлечённое сообщение: {extracted}\n")
