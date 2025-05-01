@@ -5,14 +5,11 @@ import pandas as pd
 import csv
 import os
 import re
-import itertools
 
 def process_csv(csv_file: str, tag):
-    """Анализ CSV-файла и визуализация ошибок первого и второго рода для каждого метода"""
     try:
         df = pd.read_csv(csv_file, sep=';', dtype={'filename': str})
         
-        # Проверка данных
         required_columns = {'filename', 'Xi-square', 'RS-analyse', 'AUMP'}
         if not required_columns.issubset(df.columns):
             missing = required_columns - set(df.columns)
@@ -21,7 +18,6 @@ def process_csv(csv_file: str, tag):
         if df['filename'].isnull().any():
             raise ValueError("Обнаружены пустые значения в столбце 'filename'")
         
-        # Разделение данных
         empty_mask = ~df['filename'].str.contains('_stego', na=False)
         empty_df = df[empty_mask]
         filled_df = df[~empty_mask]
@@ -30,19 +26,15 @@ def process_csv(csv_file: str, tag):
         fp_rates = []
         fn_rates = []
         
-        # Расчёт ошибок для каждого метода
         for method in methods:
-            # Ошибка первого рода (FP)
             fp = empty_df[empty_df[method] == 1].shape[0]
             fp_rate = fp / len(empty_df) if len(empty_df) > 0 else 0
             fp_rates.append(fp_rate)
             
-            # Ошибка второго рода (FN)
             fn = filled_df[filled_df[method] == 0].shape[0]
             fn_rate = fn / len(filled_df) if len(filled_df) > 0 else 0
             fn_rates.append(fn_rate)
         
-        # Визуализация
         x = range(len(methods))
         width = 0.35
         
@@ -58,7 +50,6 @@ def process_csv(csv_file: str, tag):
         ax.legend()
         ax.grid(axis='y', linestyle='--', alpha=0.7)
         
-        # Добавление подписей
         for bars in (bars1, bars2):
             for bar in bars:
                 height = bar.get_height()
@@ -79,27 +70,22 @@ def process_csv(csv_file: str, tag):
         print("- Числовые столбцы методов (0=не обнаружено, 1=обнаружено)")
 
 def parse_file(file_path):
-    """Функция для парсинга файла и извлечения значений для анализа."""
     results = []
     
     with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read()
         
-        # Разбиваем текст на блоки данных, каждый из которых начинается с "Результаты стегоанализа для"
         blocks = re.split(r"Результаты стегоанализа для", content)
         
-        for block in blocks[1:]:  # Пропускаем первый блок, так как это все до первого результата
+        for block in blocks[1:]:
             chi_square = rs_analysis = aump = None
             image_path = None
             
-            # Извлекаем путь к изображению
             image_path_match = re.search(r"(/[\w/._-]+\.\w+)", block)  # Путь к изображению (например, /path/to/2.bmp)
             if image_path_match:
                 image_path = image_path_match.group(1)
-                # Извлекаем только имя файла, избавляемся от полного пути
                 image_filename = os.path.basename(image_path)
             
-            # Извлекаем значения для каждого параметра
             chi_square_match = re.search(r"Хи-квадрат \(среднее по всем блокам\): ([\d\.]+)", block)
             rs_analysis_match = re.search(r"RS-анализ: ([\d\.E-]+)", block)
             aump_match = re.search(r"AUMP-показатель: ([\d\.]+)", block)
@@ -270,7 +256,6 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    # Ваш существующий код с фиксированными порогами (если нужно)
     chi_threshold = 5000
     rs_threshold = 0.02
     aump_threshold = 1.9
