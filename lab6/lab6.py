@@ -104,8 +104,8 @@ def parse_file(file_path):
 def compare_with_thresholds(chi_square, rs_analysis, aump, chi_threshold, rs_threshold, aump_threshold):
     """Функция для сравнения значений с порогами."""
     chi_square_check = 1 if chi_square >= chi_threshold else 0
-    rs_analysis_check = 1 if rs_analysis <= rs_threshold else 0
-    aump_check = 1 if aump <= aump_threshold else 0
+    rs_analysis_check = 1 if rs_analysis >= rs_threshold else 0
+    aump_check = 1 if aump >= aump_threshold else 0
     return chi_square_check, rs_analysis_check, aump_check
 
 def read_files(file_paths):
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         return fp_rates, fn_rates
 
     ### График для метода Xi-square ###
-    chi_thresholds = np.arange(13000, 0, -1000)
+    chi_thresholds = np.arange(0, 13000, 1000)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     plt.show()
 
     ### График для метода RS-analyse ###
-    rs_thresholds = np.arange(2, 0, -0.001)
+    rs_thresholds = np.arange(0, 2, 0.01)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         for row in not_processed_results:
             filename, chi, rs, aump = row
             chi_check = 0
-            rs_check = 1 if rs <= thr else 0
+            rs_check = 1 if rs >= thr else 0
             aump_check = 0
             processed.append([filename, chi_check, rs_check, aump_check])
         fp_rates, fn_rates = calculate_fp_fn(processed)
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     plt.show()
 
     ### График для метода AUMP ###
-    aump_thresholds = np.arange(10, 0, -0.1)
+    aump_thresholds = np.arange(0, 5, 0.1)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -237,7 +237,7 @@ if __name__ == "__main__":
             filename, chi, rs, aump = row
             chi_check = 0
             rs_check = 0
-            aump_check = 1 if aump <= thr else 0
+            aump_check = 1 if aump >= thr else 0
             processed.append([filename, chi_check, rs_check, aump_check])
         fp_rates, fn_rates = calculate_fp_fn(processed)
         fp_list.append(fp_rates['AUMP'])
@@ -257,8 +257,8 @@ if __name__ == "__main__":
     plt.show()
 
     chi_threshold = 5000
-    rs_threshold = 0.02
-    aump_threshold = 1.9
+    rs_threshold = 0.009
+    aump_threshold = 1
 
     processed_results = perocess_results(chi_threshold, rs_threshold, aump_threshold, not_processed_results)
     write_to_csv('analysis_results.csv', processed_results)
