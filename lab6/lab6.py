@@ -164,7 +164,7 @@ if __name__ == "__main__":
         return fp_rates, fn_rates
 
     ### График для метода Xi-square ###
-    chi_thresholds = np.arange(0, 13000, 1000)
+    chi_thresholds = np.arange(0, 13000, 500)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -192,10 +192,12 @@ if __name__ == "__main__":
     plt.ylim(0, 1)
     plt.grid(True)
     plt.tight_layout()
+    for i, thr in enumerate(thresholds):
+        plt.text(fn_list[i], fp_list[i], f'{thr:.2f}', fontsize=10, ha='right', va='bottom')
     plt.show()
 
     ### График для метода RS-analyse ###
-    rs_thresholds = np.arange(0, 2, 0.01)
+    rs_thresholds = np.arange(0, 2, 0.005)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -223,10 +225,12 @@ if __name__ == "__main__":
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.tight_layout()
+    for i, thr in enumerate(thresholds):
+        plt.text(fn_list[i], fp_list[i], f'{thr:.3f}', fontsize=10, ha='right', va='bottom')
     plt.show()
 
     ### График для метода AUMP ###
-    aump_thresholds = np.arange(0, 5, 0.1)
+    aump_thresholds = np.arange(0, 2, 0.05)
     fp_list = []
     fn_list = []
     thresholds = []
@@ -254,11 +258,14 @@ if __name__ == "__main__":
     plt.ylim(0, 1)
     plt.grid(True)
     plt.tight_layout()
+    for i, thr in enumerate(thresholds):
+        if i % 10 == 0:
+            plt.text(fn_list[i], fp_list[i], f'{thr:.2f}', fontsize=10, ha='right', va='bottom')
     plt.show()
 
     chi_threshold = 5000
-    rs_threshold = 0.009
-    aump_threshold = 1
+    rs_threshold = 0.01
+    aump_threshold = 0.85
 
     processed_results = perocess_results(chi_threshold, rs_threshold, aump_threshold, not_processed_results)
     write_to_csv('analysis_results.csv', processed_results)
