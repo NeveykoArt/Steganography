@@ -126,7 +126,7 @@ class BitImageVisualizer(QWidget):
         return beta
     
     def initUI(self):
-        self.setWindowTitle("Атака на пустой контейнер")
+        self.setWindowTitle("Методы анализа контейнеров")
         self.resize(800, 600)
 
         main_layout = QVBoxLayout()
@@ -324,7 +324,6 @@ class BitImageVisualizer(QWidget):
         print(np.sort(elements_1))
         print(np.sort(elements_2))
         print(np.sort(elements_3))
-
 
         save_path, _ = QFileDialog.getSaveFileName(
             self,
